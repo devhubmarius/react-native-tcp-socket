@@ -3,6 +3,24 @@ cmake_minimum_required(VERSION 3.18.0)
 # Name deiner JSI Library
 project(fast_tcp_socket_jsi)
 
+
+/Users/mariusstiedl/Repositories/aitransfer/android/app/src/main/java
+/Users/mariusstiedl/Repositories/aitransfer/node_modules/react-native-tcp-socket
+
+# Wir suchen das Root-Verzeichnis von React Native
+# ../../../.. geht vom cpp ordner zurück:
+# cpp -> main -> src -> android -> (modul root) -> node_modules
+set(NODE_MODULES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../node_modules)
+set(REACT_NATIVE_DIR ${NODE_MODULES_DIR}/react-native)
+
+# Includes für JSI und React Native Internals
+include_directories(
+    ${REACT_NATIVE_DIR}/ReactCommon/jsi
+    ${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/first-party/fbjni/headers
+    ${REACT_NATIVE_DIR}/ReactCommon
+    ${REACT_NATIVE_DIR}/ReactCommon/callinvoker
+)
+
 # React Native benötigt prefab für neuere Versionen,
 # aber für JSI Zugriff brauchen wir oft die Standard-Includes.
 # Wir halten es erst einmal simpel.
