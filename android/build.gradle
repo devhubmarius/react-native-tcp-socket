@@ -28,6 +28,11 @@ android {
             path "src/main/cpp/CMakeLists.txt"
         }
     }
+
+    packagingOptions {
+        pickFirst '**/libc++_shared.so' 
+        pickFirst '**/libfbjni.so'
+    }
 }
 
 dependencies {
