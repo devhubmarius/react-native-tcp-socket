@@ -1,5 +1,7 @@
 package com.asterinet.react.tcpsocket;
 
+import com.facebook.react.bridge.JavaScriptContextHolder;
+import com.facebook.react.turbomodule.core.CallInvokerHolderImpl;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -52,6 +54,17 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
     private final ExecutorService executorService = Executors.newFixedThreadPool(N_THREADS);
     private TcpEventListener tcpEvtListener;
 
+    // Name muss mit project(...) in CMakeLists.txt übereinstimmen
+    static {
+        try {
+            System.loadLibrary("fast_tcp_socket_jsi");
+        } catch (Exception ignored) {
+        }
+    }
+
+    // Diese Methode wird später in C++ implementiert
+    private native void nativeInstall(long jsiPtr, CallInvokerHolderImpl jsCallInvokerHolder);
+
     public TcpSocketModule(ReactApplicationContext reactContext) {
         super(reactContext);
         mReactContext = reactContext;
@@ -67,6 +80,25 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
     public @NonNull
     String getName() {
         return TAG;
+    }
+
+    @ReactMethod(isBlockingSynchronousMethod = true)
+    public boolean install() {
+        try {
+            JavaScriptContextHolder jsContext = getReactApplicationContext().getJavaScriptContextHolder();
+            CallInvokerHolderImpl callInvoker = (CallInvokerHolderImpl) getReactApplicationContext().getCatalystInstance().getJSCallInvokerHolder();
+
+            if (jsContext.get() != 0) {
+                nativeInstall(jsContext.get(), callInvoker);
+                return true;
+            } else {
+                Log.e("TcpSocketModule", "JSI Runtime is not available in default mode");
+                return false;
+            }
+        } catch (Exception e) {
+            Log.e("TcpSocketModule", "Failed to install JSI Bindings", e);
+            return false;
+        }
     }
 
     /**
