@@ -1,4 +1,5 @@
 declare namespace _default {
+    export { install };
     export { createConnection as connect };
     export { createServer };
     export { createConnection };
@@ -14,6 +15,7 @@ declare namespace _default {
     export const hasIdentity: typeof import("./TLSSocket").default.hasIdentity;
 }
 export default _default;
+
 export type ServerOptions = {
     noDelay?: boolean | undefined;
     keepAlive?: boolean | undefined;
@@ -21,6 +23,12 @@ export type ServerOptions = {
     allowHalfOpen?: boolean | undefined;
     pauseOnConnect?: boolean | undefined;
 };
+
+/**
+ * Installiert die JSI Bindings für High-Performance IO.
+ * Muss einmalig beim App-Start aufgerufen werden.
+ */
+declare function install(): boolean;
 /**
  * @param {import('./Socket').ConnectionOptions} options
  * @param {() => void} callback

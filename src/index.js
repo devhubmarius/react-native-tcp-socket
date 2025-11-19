@@ -5,6 +5,23 @@ import Socket from './Socket';
 import TLSServer from './TLSServer';
 import TLSSocket from './TLSSocket';
 
+import { NativeModules, Platform } from 'react-native'; // <--- Sicherstellen, dass das da ist
+const { TcpSocketModule } = NativeModules; // <--- Referenz auf dein Java Modul
+
+// === NEU HINZUFÜGEN ===
+/**
+ * Installiert die JSI Bindings für High-Performance IO.
+ * Muss einmalig beim App-Start aufgerufen werden.
+ */
+function install() {
+    if (Platform.OS === 'android') {
+        // Ruft die Java-Methode auf, die wir vorhin erstellt haben
+        return TcpSocketModule.install();
+    }
+    // iOS Implementierung folgt später oder return false
+    return false;
+}
+
 /**
  * @typedef {object} ServerOptions
  * @property {boolean} [noDelay]
@@ -126,6 +143,7 @@ export default {
     TLSServer,
     TLSSocket,
     hasIdentity: TLSSocket.hasIdentity,
+    install,
 };
 
 // @ts-ignore
@@ -143,4 +161,5 @@ module.exports = {
     TLSServer,
     TLSSocket,
     hasIdentity: TLSSocket.hasIdentity,
+    install,
 };

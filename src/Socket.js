@@ -1,6 +1,6 @@
 'use strict';
 
-import { NativeModules, Platform } from 'react-native';
+import { NativeModules } from 'react-native';
 import EventEmitter from 'eventemitter3';
 import { Buffer } from 'buffer';
 const Sockets = NativeModules.TcpSockets;
@@ -124,13 +124,6 @@ export default class Socket extends EventEmitter {
 
     get timeout() {
         return this._timeout;
-    }
-
-    install() {
-        if (Platform.OS === 'android') {
-            return Sockets.install();
-        }
-        return false;
     }
 
     /**
