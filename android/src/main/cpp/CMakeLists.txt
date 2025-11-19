@@ -4,9 +4,6 @@ cmake_minimum_required(VERSION 3.18.0)
 project(fast_tcp_socket_jsi)
 
 
-/Users/mariusstiedl/Repositories/aitransfer/android/app/src/main/java
-/Users/mariusstiedl/Repositories/aitransfer/node_modules/react-native-tcp-socket
-
 # Wir suchen das Root-Verzeichnis von React Native
 # ../../../.. geht vom cpp ordner zurück:
 # cpp -> main -> src -> android -> (modul root) -> node_modules

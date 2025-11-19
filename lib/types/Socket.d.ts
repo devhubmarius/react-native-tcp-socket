@@ -89,11 +89,6 @@ export default class Socket extends EventEmitter<SocketEvents & ReadableEvents, 
     get bytesRead(): number;
     get timeout(): number | undefined;
     /**
-     * Install the socket module on the native side.
-     * @returns {boolean} True if the installation was successful, false otherwise.
-     */
-    install(): boolean;
-    /**
      * @package
      * @param {number} id
      */
