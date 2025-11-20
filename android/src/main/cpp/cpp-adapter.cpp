@@ -2,7 +2,7 @@
 #include <jsi/jsi.h>
 #include <android/log.h>
 // Da wir die Ordner direkt in CMake eingebunden haben:
-#include <CallInvoker.h>       // Liegt in ReactCommon/callinvoker
+#include <ReactCommon/CallInvoker.h>       // Liegt in ReactCommon/callinvoker
 #include <CallInvokerHolder.h> // Liegt in ReactAndroid/.../turbomodule
 #include <fbjni/fbjni.h>       // Notwendig für JNI Wrapper
 #include <map>

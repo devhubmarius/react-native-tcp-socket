@@ -2,22 +2,24 @@ cmake_minimum_required(VERSION 3.18.0)
 
 project(fast_tcp_socket_jsi)
 
-# 1. React Native JSI und FBJNI via Prefab laden
 find_package(ReactAndroid REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)
 
-# 2. Pfade zu node_modules berechnen
 set(NODE_MODULES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../)
 set(REACT_NATIVE_DIR ${NODE_MODULES_DIR}/react-native)
 
-# 3. Includes manuell hinzufügen
-# WICHTIG: Der dritte Pfad ist der, der bisher fehlte!
 include_directories(
-    # ReactCommon Basis
+    # 1. Basis ReactCommon
     ${REACT_NATIVE_DIR}/ReactCommon
-    # CallInvoker Logic
-    ${REACT_NATIVE_DIR}/ReactCommon/callinvoker/ReactCommon
-    # CallInvokerHolder (Android JNI Wrapper)
+    
+    # 2. FIX FÜR DEN NEUEN FEHLER:
+    # Wir fügen den Ordner hinzu, der "ReactCommon/CallInvoker.h" enthält.
+    # Das ist: .../react-native/ReactCommon/callinvoker
+    ${REACT_NATIVE_DIR}/ReactCommon/callinvoker
+    
+    # 3. FIX FÜR CallInvokerHolder:
+    # Laut deinem Log liegt er in .../turbomodule/ReactCommon/CallInvokerHolder.h
+    # Damit wir <CallInvokerHolder.h> finden, müssen wir in diesen Ordner:
     ${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule/ReactCommon
 )
 
@@ -27,10 +29,9 @@ add_library(
     cpp-adapter.cpp
 )
 
-# 4. Linken
 target_link_libraries(
     fast_tcp_socket_jsi
     ReactAndroid::jsi
-    fbjni::fbjni      # Wichtig für CallInvokerHolder
+    fbjni::fbjni
     log
 )
