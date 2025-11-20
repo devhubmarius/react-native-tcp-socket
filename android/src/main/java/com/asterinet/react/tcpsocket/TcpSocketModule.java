@@ -31,6 +31,7 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -110,13 +111,13 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
         TcpSocket socket = socketMap.get(cID);
         
         if (socket == null) {
-            Log.e("TcpSocketJSI", "Kein Socket gefunden für ID: " + cID);
+            Log.e("FastTcpSocketJSI", "Kein Socket gefunden für ID: " + cID);
             return;
         }
         
         // 2. Prüfen ob es ein Client-Socket ist
         if (!(socket instanceof TcpSocketClient)) {
-            Log.e("TcpSocketJSI", "Socket mit ID " + cID + " ist kein Client");
+            Log.e("FastTcpSocketJSI", "Socket mit ID " + cID + " ist kein Client");
             return;
         }
         
@@ -124,8 +125,9 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
         TcpSocketClient client = (TcpSocketClient) socket;
         try {
             client.write(msgId, data);
+            Log.i("FastTcpSocketJSI", "Daten erfolgreich geschrieben", Arrays.toString(data));
         } catch (Exception e) {
-            Log.e("TcpSocketJSI", "Fehler beim Schreiben von JSI Daten", e);
+            Log.e("FastTcpSocketJSI", "Fehler beim Schreiben von JSI Daten", e);
         }
     }
 
