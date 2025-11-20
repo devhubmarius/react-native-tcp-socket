@@ -102,6 +102,27 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
     }
 
     /**
+     * Diese Methode wird direkt von C++ (JSI) aufgerufen.
+     * Sie umgeht die React Native Bridge Serialisierung.
+     */
+    public void jsiWrite(int cID, int msgId, byte[] data) {
+        // 1. Socket Client anhand der ID finden
+        TcpSocketClient client = socketMap.get(cID);
+        
+        if (client != null) {
+            try {
+                // 2. Daten direkt in den Stream schreiben
+                // Die Methode write() erwartet im Legacy Modul meistens byte[]
+                client.write(msgId, data); 
+            } catch (Exception e) {
+                Log.e("TcpSocketJSI", "Fehler beim Schreiben von JSI Daten", e);
+            }
+        } else {
+            Log.e("TcpSocketJSI", "Kein Socket gefunden für ID: " + cID);
+        }
+    }
+
+    /**
      * Creates a TCP Socket and establish a connection with the given host
      *
      * @param cId     socket ID

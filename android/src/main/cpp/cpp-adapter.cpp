@@ -1,62 +1,104 @@
 #include <jni.h>
 #include <jsi/jsi.h>
 #include <android/log.h>
-#include <string>
 
 using namespace facebook;
 
-// Hilfsmakro fürs Loggen in Android Logcat
 #define LOG_TAG "FastTcpSocketJSI"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
-// Globale Referenz auf die Java-Umgebung speichern wir später hier (für Callbacks)
-// JavaVM *java_vm;
+// Globale Variablen, um Java von überall aufzurufen
+JavaVM *java_vm = nullptr;
+jobject java_module_ref = nullptr; // Globale Referenz auf TcpSocketModule
+jmethodID method_jsiWrite = nullptr; // ID der Java-Methode
 
-/**
- * Die Funktion muss GENAU so heißen:
- * Java_<Package_Name_mit_Underscores>_<KlassenName>_<MethodenName>
- */
 extern "C" JNIEXPORT void JNICALL
 Java_com_asterinet_react_tcpsocket_TcpSocketModule_nativeInstall(
         JNIEnv *env,
-jobject thiz,
+        jobject thiz,
         jlong jsiPtr,
-jobject callInvokerHolder) {
+        jobject callInvokerHolder) {
 
-// 1. JSI Runtime Pointer casten
-auto runtime = reinterpret_cast<jsi::Runtime*>(jsiPtr);
+    // 1. Java VM Pointer speichern (für Thread-Zugriff)
+    env->GetJavaVM(&java_vm);
 
-if (!runtime) {
-LOGI("Error: Runtime pointer is null!");
-return;
-}
+    // 2. Globale Referenz auf das Java-Objekt erstellen
+    // Das verhindert, dass der Garbage Collector das Objekt löscht
+    if (java_module_ref == nullptr) {
+        java_module_ref = env->NewGlobalRef(thiz);
+    }
 
-LOGI("JSI Bindings werden installiert...");
+    // 3. Die Java-Methode "jsiWrite" suchen
+    jclass cls = env->GetObjectClass(thiz);
+    // I = int (socketId), I = int (msgId), [B = byte[] (data) -> V = void
+    method_jsiWrite = env->GetMethodID(cls, "jsiWrite", "(II[B)V");
 
-// 2. Erstellen einer Test-Funktion in C++
-// Diese Funktion wird später als 'global.nativeTcpWrite' in JS verfügbar sein.
-auto nativeWrite = jsi::Function::createFromHostFunction(
+    if (!method_jsiWrite) {
+        LOGI("FEHLER: Methode 'jsiWrite' in Java nicht gefunden!");
+        return;
+    }
+
+    auto runtime = reinterpret_cast<jsi::Runtime*>(jsiPtr);
+    LOGI("JSI Bindings: Setup...");
+
+    // --- JSI FUNKTION ---
+    auto nativeWrite = jsi::Function::createFromHostFunction(
         *runtime,
         jsi::PropNameID::forAscii(*runtime, "nativeTcpWrite"),
-        2, // Anzahl der Argumente (z.B. socketId, byteArray)
+        2, 
         [](jsi::Runtime& rt, const jsi::Value& thisValue, const jsi::Value* args, size_t count) -> jsi::Value {
-
-            // Test: Wir loggen einfach nur, was ankommt
-            if (count > 0 && args[0].isNumber()) {
-                double socketId = args[0].asNumber();
-                LOGI("nativeTcpWrite aufgerufen für Socket ID: %f", socketId);
-            } else {
-                LOGI("nativeTcpWrite aufgerufen!");
+            
+            // Prüfen ob wir 3 Argumente haben (SocketID, MsgID, Data)
+            if (count < 3) {
+                LOGI("JSI Error: Zu wenig Argumente (Erwartet: socketId, msgId, buffer)");
+                return jsi::Value::undefined();
             }
 
-            // Hier wird später der Byte-Zugriff passieren.
+            // Argumente parsen
+            double socketId = args[0].asNumber();
+            double msgId = args[1].asNumber(); // Das ist neu
+            
+            jsi::Object dataObj = args[2].asObject(rt); // Jetzt an Index 2
+
+            if (!dataObj.isArrayBuffer(rt)) return jsi::Value::undefined();
+
+            // Daten aus dem ArrayBuffer holen
+            jsi::ArrayBuffer buffer = dataObj.getArrayBuffer(rt);
+            size_t dataSize = buffer.size(rt);
+            uint8_t* dataPtr = buffer.data(rt);
+
+            // --- JNI CALL START ---
+            JNIEnv *env;
+            // Da JSI auf einem anderen Thread laufen kann, müssen wir uns an die JVM hängen
+            int getEnvStat = java_vm->GetEnv((void**)&env, JNI_VERSION_1_6);
+            bool didAttach = false;
+
+            if (getEnvStat == JNI_EDETACHED) {
+                java_vm->AttachCurrentThread(&env, nullptr);
+                didAttach = true;
+            }
+
+            if (env && java_module_ref && method_jsiWrite) {
+                // C++ Byte Array -> Java Byte Array umwandeln
+                jbyteArray jData = env->NewByteArray(dataSize);
+                env->SetByteArrayRegion(jData, 0, dataSize, (const jbyte*)dataPtr);
+
+                // AUFRUF AN JAVA: SocketID, MsgID, Data
+                env->CallVoidMethod(java_module_ref, method_jsiWrite, (int)socketId, (int)msgId, jData);
+
+                // Speicher in Java freigeben (Local Ref)
+                env->DeleteLocalRef(jData);
+            }
+
+            if (didAttach) {
+                java_vm->DetachCurrentThread();
+            }
+            // --- JNI CALL ENDE ---
 
             return jsi::Value::undefined();
         }
-);
+    );
 
-// 3. Die Funktion in das 'global' Objekt von JS injecten
-runtime->global().setProperty(*runtime, "nativeTcpWrite", nativeWrite);
-
-LOGI("JSI Bindings erfolgreich installiert!");
+    runtime->global().setProperty(*runtime, "nativeTcpWrite", nativeWrite);
+    LOGI("JSI Bindings: Fertig installiert.");
 }
