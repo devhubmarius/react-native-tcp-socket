@@ -195,10 +195,6 @@ Java_com_asterinet_react_tcpsocket_TcpSocketModule_nativeInstall(
     LOGI("JSI Bindings: Fertig installiert.");
 }
 
-**
- * Diese Funktion wird von Java aufgerufen, wenn Daten ankommen.
- * Java --> C++ (JNI Thread) --> C++ (JS Thread) --> JS
- */
 extern "C" JNIEXPORT void JNICALL
 Java_com_asterinet_react_tcpsocket_TcpSocketModule_nativeEmitJsiData(
         JNIEnv *env,
