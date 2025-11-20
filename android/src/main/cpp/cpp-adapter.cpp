@@ -48,9 +48,11 @@ Java_com_asterinet_react_tcpsocket_TcpSocketModule_nativeInstall(
         2, 
         [](jsi::Runtime& rt, const jsi::Value& thisValue, const jsi::Value* args, size_t count) -> jsi::Value {
             
+            // DEBUG LOG 1: Funktion betreten
+            LOGI("FastTcpSocketJSI: nativeTcpWrite aufgerufen. Argumente Anzahl: %zu", count);
             // Prüfen ob wir 3 Argumente haben (SocketID, MsgID, Data)
             if (count < 3) {
-                LOGI("JSI Error: Zu wenig Argumente (Erwartet: socketId, msgId, buffer)");
+                LOGI("FastTcpSocketJSI: Zu wenig Argumente (Erwartet: socketId, msgId, buffer)");
                 return jsi::Value::undefined();
             }
 
@@ -60,12 +62,20 @@ Java_com_asterinet_react_tcpsocket_TcpSocketModule_nativeInstall(
             
             jsi::Object dataObj = args[2].asObject(rt); // Jetzt an Index 2
 
-            if (!dataObj.isArrayBuffer(rt)) return jsi::Value::undefined();
+            // DEBUG LOG 2: Prüfen ob es ein ArrayBuffer ist
+            bool isBuffer = dataObj.isArrayBuffer(rt);
+
+            if (!isBuffer) {
+                LOGI("FastTcpSocketJSI: JSI Error: Arg 2 ist kein ArrayBuffer");
+                return jsi::Value::undefined();
+            }
 
             // Daten aus dem ArrayBuffer holen
             jsi::ArrayBuffer buffer = dataObj.getArrayBuffer(rt);
             size_t dataSize = buffer.size(rt);
             uint8_t* dataPtr = buffer.data(rt);
+
+            LOGI("FastTcpSocketJSI: Datengröße: %zu Bytes. Bereite JNI vor...", dataSize);
 
             // --- JNI CALL START ---
             JNIEnv *env;
@@ -83,9 +93,10 @@ Java_com_asterinet_react_tcpsocket_TcpSocketModule_nativeInstall(
                 jbyteArray jData = env->NewByteArray(dataSize);
                 env->SetByteArrayRegion(jData, 0, dataSize, (const jbyte*)dataPtr);
 
+                LOGI("FastTcpSocketJSI: Rufe Java jsiWrite auf...");
                 // AUFRUF AN JAVA: SocketID, MsgID, Data
                 env->CallVoidMethod(java_module_ref, method_jsiWrite, (int)socketId, (int)msgId, jData);
-
+                LOGI("FastTcpSocketJSI: Java Aufruf fertig.");
                 // Speicher in Java freigeben (Local Ref)
                 env->DeleteLocalRef(jData);
             }
