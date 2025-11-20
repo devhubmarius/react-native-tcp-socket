@@ -125,7 +125,7 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
         TcpSocketClient client = (TcpSocketClient) socket;
         try {
             client.write(msgId, data);
-            Log.i("FastTcpSocketJSI", "Daten erfolgreich geschrieben", Arrays.toString(data));
+            Log.i("FastTcpSocketJSI", "Daten erfolgreich geschrieben: " + Arrays.toString(data));
         } catch (Exception e) {
             Log.e("FastTcpSocketJSI", "Fehler beim Schreiben von JSI Daten", e);
         }
