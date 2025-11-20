@@ -107,6 +107,9 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
      * Sie umgeht die React Native Bridge Serialisierung.
      */
     public void jsiWrite(int cID, int msgId, byte[] data) {
+        Log.i("FastTcpSocketJSI", "Suche ID: " + cID + ". Verfügbare Clients: " + socketMap.size());
+        socketMap.keySet().forEach(key -> Log.i("FastTcpSocketJSI", " -> Verfügbare ID: " + key));
+
         // 1. Socket anhand der ID finden
         TcpSocket socket = socketMap.get(cID);
         
