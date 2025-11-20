@@ -1,8 +1,8 @@
 #include <jni.h>
 #include <jsi/jsi.h>
 #include <android/log.h>
-#include <ReactCommon/CallInvoker.h> // WICHTIG für Thread-Wechsel
-#include <ReactCommon/CallInvokerHolder.h>
+#include <CallInvoker.h>
+#include <CallInvokerHolder.h>
 #include <map>
 #include <memory>
 

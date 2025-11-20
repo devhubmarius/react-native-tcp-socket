@@ -17,6 +17,7 @@ add_library(
 target_link_libraries(
     fast_tcp_socket_jsi
     ReactAndroid::jsi
+    ReactAndroid::react_native_module
     # Falls du später Logs brauchst:
     log
 )
