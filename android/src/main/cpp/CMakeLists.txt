@@ -17,10 +17,8 @@ include_directories(
     ${REACT_NATIVE_DIR}/ReactCommon
     # CallInvoker Logic
     ${REACT_NATIVE_DIR}/ReactCommon/callinvoker/ReactCommon
-    # CallInvokerHolder (Android JNI Wrapper) - HIER LIEGT DIE FEHLENDE DATEI
-    ${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule
-    # FBJNI Headers
-    ${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/first-party/fbjni/headers
+    # CallInvokerHolder (Android JNI Wrapper)
+    ${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule/ReactCommon
 )
 
 add_library(
