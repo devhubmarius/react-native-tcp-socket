@@ -19,8 +19,11 @@ import javax.annotation.Nullable;
 public class TcpEventListener {
 
     private final DeviceEventManagerModule.RCTDeviceEventEmitter rctEvtEmitter;
+    // 1. Referenz auf das Modul speichern
+    private final TcpSocketModule module;
 
-    public TcpEventListener(final ReactContext reactContext) {
+    public TcpEventListener(final ReactContext reactContext, final TcpSocketModule module) {
+        this.module = module;
         rctEvtEmitter = reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class);
     }
 
@@ -85,11 +88,17 @@ public class TcpEventListener {
     }
 
     public void onData(int id, byte[] data) {
-        WritableMap eventParams = Arguments.createMap();
-        eventParams.putInt("id", id);
-        eventParams.putString("data", Base64.encodeToString(data, Base64.NO_WRAP));
-
-        sendEvent("data", eventParams);
+        // Prüfen, ob JSI für diesen Socket aktiviert ist
+        if (module.isJsiEnabled(id)) {
+            // JSI Fast Path: Direkt als Byte-Array an C++
+            module.onJsiDataReceived(id, data);
+        } else {
+            // Legacy Path: Base64 Encoding und Bridge
+            WritableMap eventParams = Arguments.createMap();
+            eventParams.putInt("id", id);
+            eventParams.putString("data", Base64.encodeToString(data, Base64.NO_WRAP));
+            sendEvent("data", eventParams);
+        }
     }
 
     public void onWritten(int id, int msgId, @Nullable Exception e) {

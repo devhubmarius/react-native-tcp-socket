@@ -55,6 +55,9 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
     private final ExecutorService executorService = Executors.newFixedThreadPool(N_THREADS);
     private TcpEventListener tcpEvtListener;
 
+    // 1. Set für JSI Sockets hinzufügen
+    private final Set<Integer> jsiEnabledSockets = Collections.synchronizedSet(new HashSet<>());
+
     // Name muss mit project(...) in CMakeLists.txt übereinstimmen
     static {
         try {
@@ -74,13 +77,29 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
     @Override
     public void initialize() {
         super.initialize();
-        tcpEvtListener = new TcpEventListener(mReactContext);
+        tcpEvtListener = new TcpEventListener(mReactContext, this);
     }
 
     @Override
     public @NonNull
     String getName() {
         return TAG;
+    }
+
+        /**
+     * Wird von C++ aufgerufen, wenn JS einen Listener registriert.
+     * (Diese Methode muss auch in cpp-adapter.cpp gefunden werden!)
+     */
+    public void setJsiEnabled(int socketId) {
+        jsiEnabledSockets.add(socketId);
+        Log.i("FastTcpSocketJSI", "JSI aktiviert für Socket ID: " + socketId);
+    }
+
+    /**
+     * Wird vom TcpEventListener aufgerufen.
+     */
+    public boolean isJsiEnabled(int socketId) {
+        return jsiEnabledSockets.contains(socketId);
     }
 
     @ReactMethod(isBlockingSynchronousMethod = true)
@@ -99,6 +118,17 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
         } catch (Exception e) {
             Log.e("TcpSocketModule", "Failed to install JSI Bindings", e);
             return false;
+        }
+    }
+
+    private native void nativeEmitJsiData(int socketId, byte[] data);
+
+    // Wird vom TcpSocketClient aufgerufen, wenn JSI aktiv ist
+    public void onJsiDataReceived(int socketId, byte[] data) {
+        try {
+            nativeEmitJsiData(socketId, data);
+        } catch (Exception e) {
+            Log.e("FastTcpSocketJSI", "Failed to emit JSI data", e);
         }
     }
 
