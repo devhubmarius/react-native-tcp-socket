@@ -6,7 +6,7 @@ import TLSServer from './TLSServer';
 import TLSSocket from './TLSSocket';
 
 import { NativeModules, Platform } from 'react-native'; // <--- Sicherstellen, dass das da ist
-const { TcpSocketModule } = NativeModules; // <--- Referenz auf dein Java Modul
+const { TcpSockets } = NativeModules; // <--- Referenz auf dein Java Modul
 
 // === NEU HINZUFÜGEN ===
 /**
@@ -16,7 +16,7 @@ const { TcpSocketModule } = NativeModules; // <--- Referenz auf dein Java Modul
 function install() {
     if (Platform.OS === 'android') {
         // Ruft die Java-Methode auf, die wir vorhin erstellt haben
-        return TcpSocketModule.install();
+        return TcpSockets.install();
     }
     // iOS Implementierung folgt später oder return false
     return false;
