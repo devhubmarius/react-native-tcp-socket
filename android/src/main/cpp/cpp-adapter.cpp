@@ -1,8 +1,22 @@
 #include <jni.h>
 #include <jsi/jsi.h>
 #include <android/log.h>
+// WICHTIG: Wir includen jetzt direkt, da die Pfade in CMake gesetzt sind
+// Wir versuchen beide Varianten, um sicherzugehen (CallInvoker.h liegt oft direkt in callinvoker/)
+#if __has_include(<CallInvoker.h>)
 #include <CallInvoker.h>
+#else
+#include <ReactCommon/CallInvoker.h>
+#endif
+
+#if __has_include(<CallInvokerHolder.h>)
 #include <CallInvokerHolder.h>
+#else
+#include <ReactCommon/CallInvokerHolder.h>
+#endif
+
+// Für FBJNI (wird von CallInvokerHolder intern genutzt)
+#include <fbjni/fbjni.h> 
 #include <map>
 #include <memory>
 
