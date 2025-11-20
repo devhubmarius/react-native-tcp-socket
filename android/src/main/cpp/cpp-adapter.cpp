@@ -73,7 +73,7 @@ Java_com_asterinet_react_tcpsocket_TcpSocketModule_nativeInstall(
     }
 
     auto runtime = reinterpret_cast<jsi::Runtime*>(jsiPtr);
-    globalRuntime = runtime;
+    globalRuntime = reinterpret_cast<jsi::Runtime*>(jsiPtr);
     LOGI("JSI Bindings: Setup...");
 
     // --- JSI FUNKTION ---
@@ -202,44 +202,44 @@ Java_com_asterinet_react_tcpsocket_TcpSocketModule_nativeEmitJsiData(
         jint socketId,
         jbyteArray data) {
 
-    if (!jsCallInvoker) {
-        LOGI("Error: CallInvoker fehlt!");
+    // Sicherheitscheck
+    if (!jsCallInvoker || !globalRuntime) {
+        LOGI("Error: CallInvoker oder Runtime fehlt!");
         return;
     }
 
-    // 1. Daten Kopieren (JNI Array -> C++ Vector)
-    // Wir müssen die Daten kopieren, da wir den JNI Pointer nicht
-    // in den anderen Thread mitnehmen dürfen (er ist Thread-lokal).
+    // Daten kopieren
     jsize len = env->GetArrayLength(data);
     std::vector<uint8_t> bytes(len);
     env->GetByteArrayRegion(data, 0, len, reinterpret_cast<jbyte*>(bytes.data()));
 
-    // 2. Thread-Wechsel: Aufgabe an den JS Thread übergeben
+    // Thread-Wechsel in JS Thread
     jsCallInvoker->invokeAsync([socketId, bytes = std::move(bytes)]() {
         
-        // --- AB HIER SIND WIR IM JS THREAD ---
-        
-        // Wir brauchen Zugriff auf die Runtime. Wie?
-        // Trick: Wir haben keinen direkten globalen Pointer auf Runtime (unsafe).
-        // ABER: listener functions sind an eine Runtime gebunden.
-        
-        // Prüfen ob Listener existiert
+        // === HIER WAR DER FEHLER ===
+        // Wir müssen 'rt' definieren, bevor wir es nutzen!
+        jsi::Runtime& rt = *globalRuntime;
+        // ===========================
+
         auto it = listeners.find(socketId);
         if (it != listeners.end()) {
             try {
-                // 1. ArrayBuffer erstellen
                 jsi::Function& callback = *(it->second);
-                
-                // Buffer erstellen und Daten kopieren
-                jsi::ArrayBuffer buffer = rt.arrayBuffer(bytes.size());
-                // Zugriff auf Buffer-Daten
-                // (Da ArrayBuffer memory managed ist, müssen wir kopieren)
-                 memcpy(buffer.data(rt), bytes.data(), bytes.size());
 
-                // 2. JS Callback aufrufen
+                // Jetzt kennt er 'rt'
+                jsi::Object arrayBuffer = rt.global().getPropertyAsFunction(rt, "ArrayBuffer").callAsConstructor(rt, (int)bytes.size()).asObject(rt);
+                jsi::ArrayBuffer buffer = arrayBuffer.getArrayBuffer(rt);
+                
+                // Daten kopieren
+                memcpy(buffer.data(rt), bytes.data(), bytes.size());
+
+                // Callback aufrufen
                 callback.call(rt, buffer);
+                
+            } catch (const std::exception& e) {
+                LOGI("JSI Exception: %s", e.what());
             } catch (...) {
-                LOGI("FastTcpSocketJSI: JSI Exception beim Empfangen von Daten!");
+                LOGI("Unbekannte JSI Exception beim Empfangen von Daten");
             }
         }
     });
