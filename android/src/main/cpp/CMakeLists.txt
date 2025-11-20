@@ -2,25 +2,24 @@ cmake_minimum_required(VERSION 3.18.0)
 
 project(fast_tcp_socket_jsi)
 
-# 1. Wir suchen JSI über React Native Standard (Prefab) - das hat funktioniert
+# 1. React Native JSI und FBJNI via Prefab laden
 find_package(ReactAndroid REQUIRED CONFIG)
+find_package(fbjni REQUIRED CONFIG)
 
-# 2. Pfad zu node_modules berechnen
-# Wir sind in: node_modules/react-native-tcp-socket/android/src/main/cpp
-# Zurück zu: node_modules
+# 2. Pfade zu node_modules berechnen
 set(NODE_MODULES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../)
-
-# Falls die App in einem Monorepo ist oder node_modules woanders liegen,
-# versuchen wir eine Alternative oder nehmen an, dass RN da ist.
-# Wir definieren die Pfade zu den Headern, die Prefab oft versteckt:
 set(REACT_NATIVE_DIR ${NODE_MODULES_DIR}/react-native)
 
-# 3. Includes manuell hinzufügen (CallInvoker, FBJNI, ReactCommon)
+# 3. Includes manuell hinzufügen
+# WICHTIG: Der dritte Pfad ist der, der bisher fehlte!
 include_directories(
-    # CallInvoker Header
+    # ReactCommon Basis
     ${REACT_NATIVE_DIR}/ReactCommon
+    # CallInvoker Logic
     ${REACT_NATIVE_DIR}/ReactCommon/callinvoker
-    # FBJNI Header (wird für CallInvokerHolder benötigt)
+    # CallInvokerHolder (Android JNI Wrapper) - HIER LIEGT DIE FEHLENDE DATEI
+    ${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/react/turbomodule
+    # FBJNI Headers
     ${REACT_NATIVE_DIR}/ReactAndroid/src/main/jni/first-party/fbjni/headers
 )
 
@@ -33,8 +32,7 @@ add_library(
 # 4. Linken
 target_link_libraries(
     fast_tcp_socket_jsi
-    # Wir nutzen JSI aus dem System (Prefab)
     ReactAndroid::jsi
-    # Log
+    fbjni::fbjni      # Wichtig für CallInvokerHolder
     log
 )
